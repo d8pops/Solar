@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive T-Chart</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    .output {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ddd;
+      margin-top: 10px;
+    }
+    .output span {
+      font-weight: bold;
+    }
+    .chart {
+      margin-top: 20px;
+    }
+    .chart canvas {
+      width: 100%;
+      height: 300px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Interactive T-Chart</h1>
+
+    <!-- Utility Company -->
+    <label for="utilityCompany">Utility Company:</label>
+    <input type="text" id="utilityCompany" placeholder="Enter utility company name">
+
+    <!-- Total Yearly KW -->
+    <label for="totalYearlyKW">Total Yearly KW:</label>
+    <input type="number" id="totalYearlyKW" placeholder="Enter value (up to 35,000)" max="35000">
+
+    <!-- Month Selection -->
+    <label for="month">Select Month:</label>
+    <select id="month">
+      <option value="January">January</option>
+      <option value="February">February</option>
+      <option value="March">March</option>
+      <option value="April">April</option>
+      <option value="May">May</option>
+      <option value="June">June</option>
+      <option value="July">July</option>
+      <option value="August">August</option>
+      <option value="September">September</option>
+      <option value="October">October</option>
+      <option value="November">November</option>
+      <option value="December">December</option>
+    </select>
+
+    <!-- KW Usage On Month -->
+    <label for="kwUsage">KW Usage On Month:</label>
+    <input type="number" id="kwUsage" placeholder="Enter KW usage">
+
+    <!-- Amount of Utility -->
+    <label for="amountUtility">Amount of Utility ($):</label>
+    <input type="number" id="amountUtility" placeholder="Enter amount (up to $2000)" max="2000">
+
+    <!-- Delivery Fees -->
+    <label for="deliveryFees">Delivery Fees ($):</label>
+    <input type="number" id="deliveryFees" placeholder="Enter delivery fees (up to $900)" max="900">
+
+    <!-- Incoming Price per KW -->
+    <label for="incomingPrice">Incoming Price per KW:</label>
+    <input type="number" id="incomingPrice" placeholder="Enter incoming price">
+
+    <!-- Outgoing Price per KW -->
+    <label for="outgoingPrice">Outgoing Price per KW:</label>
+    <input type="number" id="outgoingPrice" placeholder="Enter outgoing price">
+
+    <!-- True Price Per KW -->
+    <div class="output">
+      True Price Per KW: <span id="truePricePerKW">$0.00</span>
+    </div>
+
+    <!-- Average Monthly Electric -->
+    <div class="output">
+      Average Monthly Electric: <span id="averageMonthlyElectric">$0.00</span>
+    </div>
+
+    <!-- Shortage -->
+    <label for="shortage">Shortage:</label>
+    <input type="number" id="shortage" placeholder="Enter shortage (up to 20,000)" max="20000">
+
+    <!-- Reliance on Grid -->
+    <div class="output">
+      Reliance on Grid: <span id="relianceOnGrid">0</span>
+    </div>
+
+    <!-- Predictability Chart -->
+    <div class="chart">
+      <h2>Predictability Chart (Next 25 Years)</h2>
+      <canvas id="predictabilityChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // Get all input elements
+    const utilityCompany = document.getElementById('utilityCompany');
+    const totalYearlyKW = document.getElementById('totalYearlyKW');
+    const month = document.getElementById('month');
+    const kwUsage = document.getElementById('kwUsage');
+    const amountUtility = document.getElementById('amountUtility');
+    const deliveryFees = document.getElementById('deliveryFees');
+    const incomingPrice = document.getElementById('incomingPrice');
+    const outgoingPrice = document.getElementById('outgoingPrice');
+    const truePricePerKW = document.getElementById('truePricePerKW');
+    const averageMonthlyElectric = document.getElementById('averageMonthlyElectric');
+    const shortage = document.getElementById('shortage');
+    const relianceOnGrid = document.getElementById('relianceOnGrid');
+
+    // Chart setup
+    const ctx = document.getElementById('predictabilityChart').getContext('2d');
+    let predictabilityChart;
+
+    // Function to calculate True Price Per KW
+    function calculateTruePricePerKW() {
+      const amount = parseFloat(amountUtility.value);
+      const usage = parseFloat(kwUsage.value);
+      if (usage > 0) {
+        const truePrice = (amount / usage).toFixed(2);
+        truePricePerKW.textContent = `$${truePrice}`;
+      } else {
+        truePricePerKW.textContent = '$0.00';
+      }
+    }
+
+    // Function to calculate Average Monthly Electric
+    function calculateAverageMonthlyElectric() {
+      const yearlyKW = parseFloat(totalYearlyKW.value);
+      const truePrice = parseFloat(truePricePerKW.textContent.replace('$', ''));
+      if (yearlyKW > 0 && truePrice > 0) {
+        const average = ((yearlyKW * truePrice) / 12).toFixed(2);
+        averageMonthlyElectric.textContent = `$${average}`;
+      } else {
+        averageMonthlyElectric.textContent = '$0.00';
+      }
+    }
+
+    // Function to calculate Reliance on Grid
+    function calculateRelianceOnGrid() {
+      const shortageValue = parseFloat(shortage.value);
+      const yearlyKW = parseFloat(totalYearlyKW.value);
+      if (yearlyKW > 0) {
+        const reliance = ((shortageValue / yearlyKW) * 100).toFixed(2);
+        relianceOnGrid.textContent = `${reliance}%`;
+      } else {
+        relianceOnGrid.textContent = '0%';
+      }
+    }
+
+    // Function to update the predictability chart
+    function updatePredictabilityChart() {
+      const averageMonthly = parseFloat(averageMonthlyElectric.textContent.replace('$', ''));
+      if (averageMonthly > 0) {
+        const years = [];
+        const bills = [];
+        let currentBill = averageMonthly;
+
+        for (let i = 0; i <= 25; i += 3) {
+          years.push(`Year ${i}`);
+          bills.push(currentBill.toFixed(2));
+          currentBill *= 1.05; // Apply 5% inflation
+        }
+
+        if (predictabilityChart) {
+          predictabilityChart.destroy();
+        }
+
+        predictabilityChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: years,
+            datasets: [{
+              label: 'Average Monthly Electric Bill ($)',
+              data: bills,
+              borderColor: 'blue',
+              fill: false,
+            }]
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+    }
+
+    // Add event listeners to inputs
+    amountUtility.addEventListener('input', () => {
+      calculateTruePricePerKW();
+      calculateAverageMonthlyElectric();
+      updatePredictabilityChart();
+    });
+  </script>
+</body>
+</html>
